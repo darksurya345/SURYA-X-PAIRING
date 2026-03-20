@@ -10,41 +10,39 @@ app.get('/', (req, res) => {
         <!DOCTYPE html>
         <html>
         <head>
-            <title>SURYA-X PAIRING</title>
+            <title>SURYA-X FIXED</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { background: #0b0e11; color: #00ffcc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                .box { background: #1a1d21; padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #00ffcc; width: 85%; max-width: 400px; box-shadow: 0 0 20px rgba(0,255,204,0.3); }
-                input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #00ffcc; background: #0b0e11; color: white; text-align: center; font-size: 18px; outline: none; }
-                button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #00ffcc; color: #0b0e11; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
-                button:hover { background: #00ccaa; }
-                #res { margin-top: 20px; font-weight: bold; color: #ffffff; min-height: 50px; }
+                body { background: #000; color: #0f0; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                .box { border: 2px solid #0f0; padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 350px; }
+                input { width: 100%; padding: 10px; margin: 10px 0; background: #111; border: 1px solid #0f0; color: #0f0; text-align: center; }
+                button { width: 100%; padding: 10px; background: #0f0; color: #000; border: none; font-weight: bold; cursor: pointer; }
+                #res { margin-top: 15px; color: #fff; word-break: break-all; }
             </style>
         </head>
         <body>
             <div class="box">
-                <h2 style="margin:0 0 10px 0;">SURYA-X MD</h2>
-                <p>Enter Number with Country Code</p>
-                <input type="number" id="num" placeholder="Example: 917797099719">
-                <button onclick="getCode()">GENERATE PAIRING CODE</button>
+                <h2>SURYA-X PAIRING</h2>
+                <input type="number" id="num" placeholder="91XXXXXXXXXX">
+                <button onclick="getCode()">GET CODE</button>
                 <div id="res"></div>
             </div>
             <script>
                 async function getCode() {
                     const num = document.getElementById('num').value;
                     const resDiv = document.getElementById('res');
-                    if (!num) return alert("Please enter your number!");
-                    resDiv.innerText = "Please wait... Requesting Pairing";
+                    if (!num) return alert("Number?");
+                    resDiv.innerText = "Connecting to WhatsApp...";
                     try {
                         const response = await fetch('/code?number=' + num);
                         const data = await response.json();
                         if (data.code) {
-                            resDiv.innerHTML = "YOUR CODE: <br><span style='font-size: 35px; color: #00ffcc; letter-spacing: 5px; display:block; margin-top:10px;'>" + data.code + "</span>";
+                            resDiv.innerHTML = "CODE: <br><b style='font-size:30px; color:#0f0'>" + data.code + "</b>";
                         } else {
                             resDiv.innerText = "Error: " + (data.error || "Failed");
                         }
                     } catch (e) {
-                        resDiv.innerText = "Error! Refresh and try again.";
+                        resDiv.innerText = "Server Error. Try Refresh.";
                     }
                 }
             </script>
@@ -55,32 +53,24 @@ app.get('/', (req, res) => {
 
 app.get('/code', async (req, res) => {
     let num = req.query.number;
-    if (!num) return res.json({ error: "Number is required" });
-
     try {
-        // Use a clean state every time to avoid "Already paired" errors
-        const { state, saveCreds } = await useMultiFileAuthState('session_temp_' + Date.now());
+        // dynamic folder name for every request to avoid "Try after 1 minute"
+        const { state } = await useMultiFileAuthState('session_' + Math.floor(Math.random() * 10000));
         const sock = makeWASocket({
             auth: state,
             printQRInTerminal: false,
             logger: pino({ level: 'silent' }),
-            // Mimic a stable desktop browser
-            browser: Browsers.macOS("Desktop")
+            browser: Browsers.ubuntu("Chrome")
         });
 
         if (!sock.authState.creds.registered) {
-            await delay(5000); 
+            await delay(3000);
             const code = await sock.requestPairingCode(num);
             res.json({ code: code });
-        } else {
-            res.json({ error: "Session conflict. Restarting..." });
         }
     } catch (err) {
-        console.error(err);
-        res.json({ error: "Try after 1 minute" });
+        res.json({ error: "WhatsApp Busy. Try again." });
     }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('Server live on ' + PORT);
-});
+app.listen(PORT, '0.0.0.0', () => console.log('Live on ' + PORT));
