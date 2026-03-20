@@ -6,7 +6,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
-    res.send('Server is Running! Go to /code?number=your_number to get code.');
+    res.send('Server Active! Use /code?number=91XXXXXXXXXX');
 });
 
 app.get('/code', async (req, res) => {
@@ -14,7 +14,8 @@ app.get('/code', async (req, res) => {
     if (!num) return res.json({ error: "Number add koro!" });
 
     try {
-        const { state, saveCreds } = await useMultiFileAuthState('session_auth');
+        // dynamic path for every session to clear old errors
+        const { state, saveCreds } = await useMultiFileAuthState('session_' + Math.floor(Math.random() * 1000));
         const sock = makeWASocket({
             auth: {
                 creds: state.creds,
@@ -22,20 +23,21 @@ app.get('/code', async (req, res) => {
             },
             printQRInTerminal: false,
             logger: pino({ level: 'silent' }),
-            browser: Browsers.ubuntu("Chrome")
+            // Latest Chrome version mimic to bypass security
+            browser: ["Ubuntu", "Chrome", "121.0.6167.160"] 
         });
 
         if (!sock.authState.creds.registered) {
-            await delay(2000);
+            // delay increase kora hoyeche jate connection stable hoy
+            await delay(10000); 
             const code = await sock.requestPairingCode(num);
             res.json({ code: code });
-        } else {
-            res.json({ error: "Already paired! Session folder delete koro." });
         }
     } catch (err) {
-        res.json({ error: "WhatsApp block korche. Ektu por try koro." });
+        console.log(err);
+        res.json({ error: "Try again after 30 seconds." });
     }
 });
 
-app.listen(PORT, '0.0.0.0', () => console.log('Live on ' + PORT));
-        
+app.listen(PORT, '0.0.0.0', () => console.log('SURYA-X Server Live!'));
+            
