@@ -1,13 +1,16 @@
 const express = require('express');
-const { default: makeWASocket, useMultiFileAuthState, delay, Browsers } = require('@whiskeysockets/baileys');
+const { 
+    default: makeWASocket, 
+    useMultiFileAuthState, 
+    delay, 
+    Browsers 
+} = require('@whiskeysockets/baileys');
 const pino = require('pino');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Home Route - Eita "Not Found" bondho korbe
 app.get('/', (req, res) => {
-    res.setHeader('Content-Type', 'text/html');
     res.send(`
         <!DOCTYPE html>
         <html>
@@ -15,19 +18,20 @@ app.get('/', (req, res) => {
             <title>SURYA-X PAIRING</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                body { background: #0f172a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-                .box { background: #1e293b; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 350px; }
-                input { width: 100%; padding: 12px; box-sizing: border-box; margin: 15px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; font-size: 16px; text-align: center; }
-                button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: bold; cursor: pointer; font-size: 16px; }
-                #res { margin-top: 20px; font-weight: bold; color: #fbbf24; }
+                body { background: #0b0e11; color: #00ffcc; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                .box { background: #1a1d21; padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #00ffcc; box-shadow: 0 0 20px rgba(0,255,204,0.2); width: 85%; max-width: 400px; }
+                input { width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; border: 1px solid #00ffcc; background: #0b0e11; color: white; text-align: center; font-size: 18px; }
+                button { width: 100%; padding: 12px; border-radius: 8px; border: none; background: #00ffcc; color: #0b0e11; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; }
+                button:hover { background: #00ccaa; transform: scale(1.02); }
+                #res { margin-top: 20px; font-weight: bold; color: #ffffff; min-height: 50px; }
             </style>
         </head>
         <body>
             <div class="box">
-                <h2 style="color: #22c55e;">SURYA-X PAIRING</h2>
-                <p>Enter number with country code</p>
+                <h2 style="margin-top:0;">SURYA-X MD</h2>
+                <p>Enter WhatsApp Number (With Country Code)</p>
                 <input type="number" id="num" placeholder="Example: 917797099719">
-                <button onclick="getCode()">GET CODE</button>
+                <button onclick="getCode()">GENERATE PAIRING CODE</button>
                 <div id="res"></div>
             </div>
             <script>
@@ -35,17 +39,17 @@ app.get('/', (req, res) => {
                     const num = document.getElementById('num').value;
                     const resDiv = document.getElementById('res');
                     if (!num) return alert("Number kothay?");
-                    resDiv.innerText = "Generating Code... Wait 10s";
+                    resDiv.innerText = "Please wait... Requesting Session";
                     try {
                         const response = await fetch('/code?number=' + num);
                         const data = await response.json();
                         if (data.code) {
-                            resDiv.innerHTML = "YOUR CODE: <br><span style='font-size: 30px; color: #fff; background: #22c55e; padding: 10px; border-radius: 5px; display: inline-block; margin-top: 10px;'>" + data.code + "</span>";
+                            resDiv.innerHTML = "YOUR CODE: <br><span style='font-size: 32px; letter-spacing: 5px; color: #00ffcc; display: block; margin-top: 10px; background: #2c3136; padding: 10px; border-radius: 8px;'>" + data.code + "</span>";
                         } else {
-                            resDiv.innerText = "Error: " + (data.error || "Failed");
+                            resDiv.innerText = "Error: " + (data.error || "Failed. Try again.");
                         }
                     } catch (e) {
-                        resDiv.innerText = "Server error! Try again.";
+                        resDiv.innerText = "Server busy. Refresh page.";
                     }
                 }
             </script>
@@ -54,7 +58,6 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Code Generation Route
 app.get('/code', async (req, res) => {
     let num = req.query.number;
     if (!num) return res.json({ error: "Number missing" });
@@ -65,20 +68,21 @@ app.get('/code', async (req, res) => {
             auth: state,
             printQRInTerminal: false,
             logger: pino({ level: 'silent' }),
-            browser: Browsers.macOS("Desktop") 
+            // Latest Browser to bypass "Couldn't link"
+            browser: ["Ubuntu", "Chrome", "20.0.04"] 
         });
 
         if (!sock.authState.creds.registered) {
-            await delay(5000); // 5 sec wait connection built hote
+            await delay(5000); 
             const code = await sock.requestPairingCode(num);
             res.json({ code: code });
         } else {
-            res.json({ error: "Number already paired!" });
+            res.json({ error: "Session exists. Clear 'session' folder." });
         }
     } catch (err) {
-        res.json({ error: "Service Busy" });
+        console.log(err);
+        res.json({ error: "Try after 1 minute." });
     }
 });
 
-app.listen(PORT, () => console.log('Server is running on port ' + PORT));
-    
+app.listen(PORT, () => console.log('Live on ' + PORT));
