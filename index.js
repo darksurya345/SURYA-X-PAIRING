@@ -69,7 +69,8 @@ app.get('/code', async (req, res) => {
             printQRInTerminal: false,
             logger: pino({ level: 'silent' }),
             // Latest Browser to bypass "Couldn't link"
-            browser: ["Ubuntu", "Chrome", "20.0.04"] 
+            browser: ["Ubuntu", "Chrome", "110.0.5481.177"]
+             
         });
 
         if (!sock.authState.creds.registered) {
